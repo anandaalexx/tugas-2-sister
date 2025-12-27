@@ -1,0 +1,9 @@
+#!/bin/sh
+'''exec' "/mnt/c/Institut Teknologi Kalimantan (ITK)/Semester 7/Sistem Paralel dan Terdistribusi/Tugas 2/distributed-sync-system/venv/bin/python3.11" "$0" "$@"
+' '''
+import sys
+from pytest import console_main
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
+    sys.exit(console_main())

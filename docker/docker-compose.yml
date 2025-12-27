@@ -1,0 +1,76 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - dist_network # Pastikan network ditambahkan
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    environment:
+      - NODE_ID=node-1
+      - PORT=8001
+      - REDIS_URL=redis://redis:6379/0
+      - REGION=US
+    command: python src/nodes/run_node.py
+    depends_on:
+      - redis
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../:/app
+    networks:
+      - dist_network
+
+  node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    environment:
+      - NODE_ID=node-2
+      - PORT=8002
+      - REDIS_URL=redis://redis:6379/0
+      - REGION=US
+    command: python src/nodes/run_node.py
+    depends_on:
+      - redis
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../:/app
+    networks:
+      - dist_network
+
+  node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    environment:
+      - NODE_ID=node-3
+      - PORT=8003
+      - REDIS_URL=redis://redis:6379/0
+      - REGION=ASIA
+    command: python src/nodes/run_node.py
+    depends_on:
+      - redis
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../:/app
+    networks: # Pastikan network ditambahkan
+      - dist_network
+
+volumes:
+  redis-data:
+
+# Definisikan network agar semua container bisa saling bicara
+networks:
+  dist_network:
+    driver: bridge

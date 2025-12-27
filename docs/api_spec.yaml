@@ -1,0 +1,272 @@
+# docs/api_spec.yaml
+openapi: 3.0.0
+info:
+  title: Distributed Synchronization System API
+  description: API untuk Distributed Lock Manager, Queue, dan Cache.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8001
+    description: Node 1
+  - url: http://localhost:8002
+    description: Node 2
+  - url: http://localhost:8003
+    description: Node 3
+
+paths:
+  # --- Bagian A: Distributed Lock Manager ---
+  /lock:
+    post:
+      summary: Meminta Lock (Acquire Lock)
+      tags:
+        - LockManager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LockRequest"
+      responses:
+        "200":
+          description: Hasil dari permintaan lock (bisa granted atau denied)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockResponse"
+
+  /unlock:
+    post:
+      summary: Melepaskan Lock (Release Lock)
+      tags:
+        - LockManager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlockRequest"
+      responses:
+        "200":
+          description: Hasil dari pelepasan lock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockResponse"
+
+  # --- Bagian B: Distributed Queue ---
+  /queue/produce:
+    post:
+      summary: Mem-produce pesan ke antrian
+      tags:
+        - Queue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueProduceRequest"
+      responses:
+        "200":
+          description: Hasil produce (sukses jika quorum tercapai)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueProduceResponse"
+
+  /queue/consume/{queue_name}:
+    get:
+      summary: Meng-consume pesan dari antrian (dari shard lokal node)
+      tags:
+        - Queue
+      parameters:
+        - in: path
+          name: queue_name
+          required: true
+          schema:
+            type: string
+          description: Nama antrian yang akan di-consume
+      responses:
+        "200":
+          description: Pesan berhasil di-consume
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueConsumeResponse"
+        "404":
+          description: Antrian kosong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Queue empty"
+
+  # --- Bagian C: Distributed Cache ---
+  /cache/{key}:
+    get:
+      summary: Mengambil data dari cache (Cache-Aside)
+      tags:
+        - Cache
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Data ditemukan (dari cache atau source)
+        "404":
+          description: Data tidak ditemukan
+
+    post:
+      summary: Menyimpan/Memperbarui data (Write-Through + Invalidate)
+      tags:
+        - Cache
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CacheSetRequest"
+      responses:
+        "200":
+          description: Data berhasil disimpan dan invalidasi dikirim
+
+    delete:
+      summary: Menghapus data (Write-Through + Invalidate)
+      tags:
+        - Cache
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Data berhasil dihapus dan invalidasi dikirim
+
+  # --- Metrics ---
+  /metrics:
+    get:
+      summary: Mengambil performance metrics dari node
+      tags:
+        - Metrics
+      responses:
+        "200":
+          description: Statistik performa cache dan node
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsResponse"
+
+components:
+  schemas:
+    # --- Lock Schemas ---
+    LockRequest:
+      type: object
+      properties:
+        resource:
+          type: string
+          example: "resource-1"
+        owner:
+          type: string
+          example: "client-abc"
+        mode:
+          type: string
+          enum: [S, X]
+          example: "X"
+    UnlockRequest:
+      type: object
+      properties:
+        resource:
+          type: string
+          example: "resource-1"
+        owner:
+          type: string
+          example: "client-abc"
+    LockResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: "granted"
+
+    # --- Queue Schemas ---
+    QueueProduceRequest:
+      type: object
+      properties:
+        queue_name:
+          type: string
+          example: "email_jobs"
+        message:
+          type: object
+          properties:
+            user_id:
+              type: integer
+              example: 123
+            task:
+              type: string
+              example: "send_welcome_email"
+    QueueProduceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          example: "Write quorum achieved."
+    QueueConsumeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: object
+          example: { "user_id": 123, "task": "send_welcome_email" }
+
+    # --- Cache Schemas ---
+    CacheSetRequest:
+      type: object
+      properties:
+        value:
+          type: string
+          example: "data sensitif yang di-cache"
+
+    # --- Metrics Schemas ---
+    MetricsResponse:
+      type: object
+      properties:
+        node_id:
+          type: string
+        cache_metrics:
+          type: object
+          properties:
+            hits:
+              type: integer
+            misses:
+              type: integer
+            hit_rate_percentage:
+              type: string
+              example: "95.00%"
+            current_size:
+              type: integer
+            capacity:
+              type: integer
