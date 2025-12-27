@@ -142,25 +142,6 @@ pip install locust
 locust -f benchmarks/load_test_scenarios.py --host=http://localhost:8001
 ```
 
-## Performance Results
-
-### Distributed Lock Manager
-- Throughput: 2,500 locks/sec
-- Latency (p95): 25ms
-- Success Rate: 99.9%
-
-### Distributed Queue
-- Throughput: 15,000 messages/sec
-- Latency (p95): 35ms
-- Durability: 100% (with quorum)
-
-### Distributed Cache
-- Throughput: 100,000 ops/sec
-- Hit Rate: 92%
-- Invalidation Latency: <5ms
-
-Detailed performance analysis: [docs/performance_report.md](docs/performance_report.md)
-
 ## Project Structure
 
 ```
@@ -212,10 +193,6 @@ distributed-sync-system/
 - **Testing:** pytest, locust
 - **Cache Protocol:** MESI
 
-## Video Demonstration
-
-**Link YouTube:** [Coming Soon]
-
 ## Monitoring
 
 ### View Metrics
@@ -254,16 +231,3 @@ Split brain (multiple leaders):
 ```bash
 docker-compose -f docker/docker-compose.yml restart
 ```
-
-See [Deployment Guide](docs/deployment_guide.md) for more troubleshooting.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
-## Acknowledgments
-
-- Raft Consensus Algorithm by Diego Ongaro & John Ousterhout
-- MESI Protocol from computer architecture research
-- Redis team for excellent distributed data store
-- Course: Sistem Paralel & Terdistribusi
